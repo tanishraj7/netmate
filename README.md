@@ -447,10 +447,12 @@ That became the core idea behind NETmate.
 ## Screenshots
 
 ### Structured Incident Input
+<img width="1910" height="1010" alt="Screenshot 2026-09-25 233824" src="https://github.com/user-attachments/assets/5307fc73-4300-4915-a746-f7fc6457198c" />
 
 
 
 ### Generated Solution Output
+<img width="1917" height="1017" alt="Screenshot 2026-09-25 234113" src="https://github.com/user-attachments/assets/55a0c516-47e4-464f-9849-baa7aaaf2f47" />
 
 
 
