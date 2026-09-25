@@ -1,0 +1,303 @@
+{
+  "device_label": "F5 BIG-IP LTM",
+  "ticket_types": [
+    {
+      "id": "f5_vip_issue",
+      "label": "VIP / Virtual Server – Not Responding",
+      "keywords": ["vip", "virtual server", "vs", "not responding", "application down", "service down", "502", "pool down", "no healthy members", "ltm", "f5", "virtual ip", "dns rewrite", "backend"],
+      "concept": "VIP issues require comparing the non-working virtual server against a known-working reference. Common root causes:\n  1. Pool has no real members or all members are Down/Disabled\n  2. Health monitor failure (wrong path, port, expected response)\n  3. Missing DNS rewrite in Palo Alto/firewall NAT (internal servers resolve FQDN to public IP)\n  4. SNAT pool misconfiguration or missing profiles\n  5. SSL profile misconfiguration\n\nApproach: list ltm virtual to compare working vs broken VIP → check pool member states → verify monitor → test DNS resolution from internal host → check firewall NAT for DNS rewrite.",
+      "precheck": [
+        "! --- List VIP configuration (compare working vs broken) ---",
+        "list ltm virtual <VIP_NAME>",
+        "list ltm virtual <WORKING_VIP_NAME>",
+        "",
+        "! --- Check pool member states ---",
+        "show ltm pool <POOL_NAME>",
+        "list ltm pool <POOL_NAME>",
+        "",
+        "! --- Check individual node state ---",
+        "show ltm node <NODE_IP>",
+        "",
+        "! --- Check pool monitor ---",
+        "list ltm monitor http <MONITOR_NAME>",
+        "list ltm monitor https <MONITOR_NAME>",
+        "list ltm monitor tcp <MONITOR_NAME>",
+        "",
+        "! --- Check VIP profiles ---",
+        "show ltm virtual <VIP_NAME>",
+        "",
+        "! --- Verify DNS resolution from internal server ---",
+        "! nslookup <FQDN>   (run from internal Rackspace/customer server)",
+        "! Expected: should resolve to SNAT/private IP, not public VIP"
+      ],
+      "prep": [
+        "! ============================================================",
+        "! PREP — VIP Recovery",
+        "! ============================================================",
+        "",
+        "! --- OPTION A: Enable a disabled pool member ---",
+        "modify ltm pool <POOL_NAME> members modify { <NODE_IP>:<PORT> { session user-enabled }}",
+        "",
+        "! --- OPTION B: Enable a disabled node ---",
+        "modify ltm node <NODE_NAME> session user-enabled",
+        "",
+        "! --- OPTION C: Add missing real pool member ---",
+        "modify ltm pool <POOL_NAME> members add { <NODE_IP>:<PORT> }",
+        "",
+        "! --- OPTION D: Create pool with members from scratch ---",
+        "create ltm pool <POOL_NAME> {",
+        "    load-balancing-mode least-connections-member",
+        "    members add { <NODE_IP>:<PORT> }",
+        "    monitor http",
+        "}",
+        "",
+        "! --- OPTION E: Fix DNS rewrite on firewall (Palo Alto) ---",
+        "! configure",
+        "! set rulebase nat rules DST-<VIP_IP> destination-translation dns-rewrite direction forward",
+        "! commit partial admin <ADMIN_ID>",
+        "",
+        "! --- Save F5 config ---",
+        "save sys config",
+        "",
+        "! --- Validate ---",
+        "show ltm pool <POOL_NAME>",
+        "show ltm virtual <VIP_NAME>"
+      ],
+      "rollback": [
+        "! --- Disable the member that was enabled ---",
+        "modify ltm pool <POOL_NAME> members modify { <NODE_IP>:<PORT> { session user-disabled }}",
+        "",
+        "! --- Remove recently added member ---",
+        "modify ltm pool <POOL_NAME> members delete { <NODE_IP>:<PORT> }",
+        "",
+        "! --- Disable node that was enabled ---",
+        "modify ltm node <NODE_NAME> session user-disabled",
+        "",
+        "save sys config",
+        "",
+        "show ltm pool <POOL_NAME>"
+      ],
+      "check": {
+        "confirm": "Customer reports VIP <VIP_IP>:<PORT> (<FQDN>) is not responding. Application behind the VIP is unreachable. Expected behaviour: <EXPECTED_BEHAVIOUR>.",
+        "have": "nscli permissions t <TICKET_ID>\n! Confirm authorised requester has approved this LTM change.",
+        "ensure": "! Confirm you are working on the correct F5 device:\nshow sys version | grep Version\n! Cross-reference with Device ID <DEVICE_ID> from ticket",
+        "comprehend": {
+          "what_could_break": "Enabling a disabled node may route traffic to an unhealthy server if monitor is not reflecting actual health. Verify monitor status before enabling.",
+          "expected_result": "Pool members will be UP and responding. VIP will distribute traffic correctly. Application will be accessible via <FQDN>.",
+          "other_teams": "Application team should verify application health post-change. Customer to validate end-to-end."
+        },
+        "know_before": [
+          "show ltm pool <POOL_NAME>",
+          "! Note member states before change",
+          "show ltm virtual <VIP_NAME>",
+          "list ltm pool <POOL_NAME>",
+          "! Expected BEFORE: members disabled or dummy pool"
+        ],
+        "know_change": [
+          "modify ltm pool <POOL_NAME> members modify { <NODE_IP>:<PORT> { session user-enabled }}",
+          "save sys config"
+        ],
+        "know_after": [
+          "show ltm pool <POOL_NAME>",
+          "! Expected: members showing available/enabled",
+          "show ltm virtual <VIP_NAME>",
+          "! Expected: virtual server available",
+          "! curl -IvkL https://<VIP_IP>   (from external)",
+          "! Expected: HTTP 200 OK"
+        ]
+      }
+    },
+    {
+      "id": "ssl_cert",
+      "label": "SSL Certificate – Install / Renew",
+      "keywords": ["ssl", "certificate", "cert", "tls", "https", "expired", "wildcard", "install cert", "renew cert", "ssl profile", "client-ssl", "rapidssl", "digicert", "certificate expired", "chain"],
+      "concept": "SSL certificate renewal on F5 BIG-IP requires a strict sequence to avoid SSL failures:\n  1. Install new .crt certificate (no-overwrite preserves old cert for rollback)\n  2. Install matching .key private key (must match cert — SSL will fail if mismatch)\n  3. Modify client-ssl profile to reference new cert/key/chain\n  4. Save sys config\n  5. Validate with curl\n\nCritical: install cert and key BEFORE modifying the profile. The no-overwrite flag preserves existing files so rollback only requires a profile modify back to old cert name — no reinstall needed.",
+      "precheck": [
+        "! --- Identify VIP and its client-ssl profile ---",
+        "list ltm virtual <VIP_NAME>",
+        "! Look for 'profiles' section — find client-ssl profile name",
+        "",
+        "! --- Check current certificate details ---",
+        "list ltm profile client-ssl <SSL_PROFILE_NAME>",
+        "",
+        "! --- Check certificate expiry ---",
+        "show sys crypto cert <OLD_CERT_NAME>",
+        "! Look for Expiration Date field",
+        "",
+        "! --- Verify old cert and key files exist (for rollback safety) ---",
+        "show sys crypto cert all",
+        "show sys crypto key all",
+        "",
+        "! --- Confirm new cert files are ready ---",
+        "! Customer should provide: <NEW_CERT>.crt, <NEW_CERT>.key, <CHAIN>.crt"
+      ],
+      "prep": [
+        "! ============================================================",
+        "! PREP — SSL Certificate Renewal",
+        "! Install cert → Install key → Modify profile → Save",
+        "! ============================================================",
+        "",
+        "! --- STEP 1: Install new certificate (no-overwrite = safe rollback) ---",
+        "install sys crypto cert <NEW_CERT_NAME>.crt from-editor no-overwrite",
+        "! (Paste PEM certificate content when prompted)",
+        "! End with a blank line to confirm",
+        "",
+        "! --- STEP 2: Install matching private key ---",
+        "install sys crypto key <NEW_CERT_NAME>.key from-editor no-overwrite",
+        "! (Paste PEM private key content when prompted)",
+        "",
+        "! --- STEP 3: Update client-ssl profile (CRITICAL — do last) ---",
+        "modify ltm profile client-ssl <SSL_PROFILE_NAME> replace-all-with {",
+        "    <NEW_CERT_NAME> {",
+        "        cert <NEW_CERT_NAME>.crt",
+        "        key <NEW_CERT_NAME>.key",
+        "        chain <CHAIN_CERT_NAME>",
+        "    }",
+        "}",
+        "",
+        "! --- STEP 4: Save configuration ---",
+        "save sys config",
+        "",
+        "! --- STEP 5: Validate from external host ---",
+        "! curl -IvkL https://<FQDN>",
+        "! Expected: correct CN, issuer, updated expiry, HTTP 200",
+        "show sys crypto cert <NEW_CERT_NAME>.crt"
+      ],
+      "rollback": [
+        "! ============================================================",
+        "! ROLLBACK — Restore previous certificate in ssl profile",
+        "! (Old cert/key files preserved by no-overwrite — just repoint profile)",
+        "! ============================================================",
+        "",
+        "modify ltm profile client-ssl <SSL_PROFILE_NAME> replace-all-with {",
+        "    <OLD_CERT_NAME> {",
+        "        cert <OLD_CERT_NAME>.crt",
+        "        key <OLD_CERT_NAME>.key",
+        "        chain <CHAIN_CERT_NAME>",
+        "    }",
+        "}",
+        "",
+        "save sys config",
+        "",
+        "! --- Validate rollback ---",
+        "! curl -IvkL https://<FQDN>",
+        "! Expected: old certificate CN returned",
+        "show sys crypto cert <OLD_CERT_NAME>.crt"
+      ],
+      "check": {
+        "confirm": "Customer requests SSL certificate renewal on VIP <VIP_IP>:443 (<FQDN>). Current cert <OLD_CERT_NAME> is expiring/expired. New cert <NEW_CERT_NAME> issued by <CA_NAME>. Change to be performed in maintenance window.",
+        "have": "nscli permissions t <TICKET_ID>\n! Confirm Account Admin has approved this SSL cert change.\n! Customer notified before starting work.",
+        "ensure": "list ltm virtual <VIP_NAME>\nlist ltm profile client-ssl <SSL_PROFILE_NAME>\n! Confirm VIP and SSL profile are correct before making changes.",
+        "comprehend": {
+          "what_could_break": "If private key does not match certificate, SSL handshakes will fail causing total HTTPS outage. Rollback plan (restore old cert) is prepared in advance.",
+          "expected_result": "HTTPS VIP will serve new certificate. curl confirms correct CN, issuer, and updated expiry date. No interruption to HTTPS traffic.",
+          "other_teams": "Customer must verify HTTPS access post-change. Browser certificate inspection confirms new cert details."
+        },
+        "know_before": [
+          "list ltm profile client-ssl <SSL_PROFILE_NAME>",
+          "! Note current cert name and expiry",
+          "show sys crypto cert <OLD_CERT_NAME>",
+          "! curl -IvkL https://<FQDN>",
+          "! Note current certificate details in response"
+        ],
+        "know_change": [
+          "install sys crypto cert <NEW_CERT_NAME>.crt from-editor no-overwrite",
+          "install sys crypto key <NEW_CERT_NAME>.key from-editor no-overwrite",
+          "modify ltm profile client-ssl <SSL_PROFILE_NAME> replace-all-with { <NEW_CERT_NAME> { cert <NEW_CERT_NAME>.crt key <NEW_CERT_NAME>.key chain <CHAIN_CERT_NAME> } }",
+          "save sys config"
+        ],
+        "know_after": [
+          "show sys crypto cert <NEW_CERT_NAME>.crt",
+          "! Confirm expiry date matches new certificate",
+          "list ltm profile client-ssl <SSL_PROFILE_NAME>",
+          "! Expected: profile now references <NEW_CERT_NAME>",
+          "! curl -IvkL https://<FQDN>",
+          "! Expected: correct CN = *.<DOMAIN>, issuer = <CA_NAME>, new expiry, HTTP 200"
+        ]
+      }
+    },
+    {
+      "id": "f5_node_maintenance",
+      "label": "Node / Pool Member – Maintenance / Enable-Disable",
+      "keywords": ["node", "pool member", "disable node", "enable node", "drain", "maintenance", "member down", "remove from pool", "add to pool", "graceful"],
+      "concept": "Node maintenance on F5 requires gracefully removing pool members to avoid dropping active sessions. 'session user-disabled' marks the member as disabled for new connections but allows existing sessions to complete (graceful drain). 'session user-forced-disabled' immediately drops all sessions. Always verify remaining pool members can handle load before disabling any member. Re-enable with 'session user-enabled' after maintenance completes.",
+      "precheck": [
+        "! --- Check current node/member state ---",
+        "show ltm node <NODE_IP>",
+        "show ltm pool <POOL_NAME>",
+        "",
+        "! --- List all members and their states ---",
+        "list ltm pool <POOL_NAME>",
+        "",
+        "! --- Check active connections to the node ---",
+        "show ltm node <NODE_IP> connections",
+        "",
+        "! --- Verify remaining members are UP (ensure load can be absorbed) ---",
+        "show ltm pool <POOL_NAME> members"
+      ],
+      "prep": [
+        "! ============================================================",
+        "! PREP — Node Maintenance",
+        "! ============================================================",
+        "",
+        "! --- DISABLE node for maintenance (graceful — new connections only) ---",
+        "modify ltm node <NODE_NAME> session user-disabled",
+        "",
+        "! --- OR disable specific pool member ---",
+        "modify ltm pool <POOL_NAME> members modify { <NODE_IP>:<PORT> { session user-disabled }}",
+        "",
+        "! --- Verify node is disabled ---",
+        "show ltm node <NODE_NAME>",
+        "! Expected: session status: user-disabled",
+        "",
+        "! ============================================================",
+        "! POST-MAINTENANCE — Re-enable node",
+        "! ============================================================",
+        "modify ltm node <NODE_NAME> session user-enabled",
+        "",
+        "! OR re-enable pool member:",
+        "modify ltm pool <POOL_NAME> members modify { <NODE_IP>:<PORT> { session user-enabled }}",
+        "",
+        "save sys config",
+        "",
+        "show ltm node <NODE_NAME>",
+        "show ltm pool <POOL_NAME>"
+      ],
+      "rollback": [
+        "! --- Re-enable node if disabled in error ---",
+        "modify ltm node <NODE_NAME> session user-enabled",
+        "modify ltm pool <POOL_NAME> members modify { <NODE_IP>:<PORT> { session user-enabled }}",
+        "",
+        "save sys config",
+        "",
+        "show ltm node <NODE_NAME>",
+        "show ltm pool <POOL_NAME>"
+      ],
+      "check": {
+        "confirm": "Customer requests <NODE_IP> (<NODE_NAME>) in pool <POOL_NAME> be <DISABLED/ENABLED> for maintenance. Maintenance window: <WINDOW>.",
+        "have": "nscli permissions t <TICKET_ID>\n! Confirm authorised requester has approved node maintenance.",
+        "ensure": "show ltm node <NODE_NAME>\nshow ltm pool <POOL_NAME>\n! Confirm correct node and pool before making changes.",
+        "comprehend": {
+          "what_could_break": "Disabling all pool members will make the VIP unavailable. Confirm at least one other member is UP before disabling.",
+          "expected_result": "Node <NODE_NAME> will be marked user-disabled. No new connections will be sent to it. Existing sessions complete normally.",
+          "other_teams": "Application/server team performing maintenance on <NODE_IP> must notify when work is complete so node can be re-enabled."
+        },
+        "know_before": [
+          "show ltm pool <POOL_NAME>",
+          "show ltm node <NODE_NAME>",
+          "! Note current state of all members"
+        ],
+        "know_change": [
+          "modify ltm node <NODE_NAME> session user-disabled",
+          "save sys config"
+        ],
+        "know_after": [
+          "show ltm node <NODE_NAME>",
+          "! Expected: session status: user-disabled",
+          "show ltm pool <POOL_NAME>",
+          "! Expected: <NODE_NAME> shows as disabled, other members still UP"
+        ]
+      }
+    }
+  ]
+}

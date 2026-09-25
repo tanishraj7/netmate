@@ -1,0 +1,377 @@
+{
+  "tacacs": {
+    "title": "TACACS — Switch / Router Command Reference",
+    "sections": [
+      {
+        "title": "GLOBAL / BASIC DEVICE ACCESS",
+        "commands": [
+          "enable",
+          "disable",
+          "configure terminal",
+          "end",
+          "exit",
+          "write memory",
+          "copy running-config startup-config",
+          "reload",
+          "show running-config",
+          "show startup-config",
+          "show version",
+          "show inventory",
+          "show logging",
+          "clear logging",
+          "show clock"
+        ]
+      },
+      {
+        "title": "VLAN CONFIGURATION & TROUBLESHOOTING",
+        "commands": [
+          "show vlan brief",
+          "show vlan id <vlan-id>",
+          "vlan <vlan-id>",
+          "name <vlan-name>",
+          "no vlan <vlan-id>"
+        ]
+      },
+      {
+        "title": "VTP CONFIGURATION & TROUBLESHOOTING",
+        "commands": [
+          "vtp domain <domain-name>",
+          "vtp mode server",
+          "vtp mode client",
+          "vtp mode transparent",
+          "vtp version 1",
+          "vtp version 2",
+          "vtp password <password>",
+          "show vtp status",
+          "show vtp password",
+          "show vtp counters",
+          "show vtp interface"
+        ]
+      },
+      {
+        "title": "ACCESS PORT CONFIGURATION",
+        "commands": [
+          "interface <interface-id>",
+          "switchport mode access",
+          "switchport access vlan <vlan-id>",
+          "no switchport access vlan",
+          "default interface <interface-id>",
+          "show interfaces <interface-id> switchport"
+        ]
+      },
+      {
+        "title": "TRUNK PORT CONFIGURATION",
+        "commands": [
+          "interface <interface-id>",
+          "switchport trunk encapsulation dot1q",
+          "switchport mode trunk",
+          "switchport trunk native vlan <vlan-id>",
+          "switchport trunk allowed vlan <vlan-list>",
+          "switchport trunk allowed vlan add <vlan-list>",
+          "switchport trunk allowed vlan remove <vlan-list>",
+          "show interfaces trunk",
+          "show interface <interface-id> trunk"
+        ]
+      },
+      {
+        "title": "HSRP CONFIGURATION & TROUBLESHOOTING",
+        "commands": [
+          "interface <interface-id>",
+          "standby <group-number> ip <virtual-ip>",
+          "standby <group-number> priority <priority>",
+          "standby <group-number> preempt",
+          "standby <group-number> authentication <string>",
+          "show standby",
+          "show standby brief",
+          "debug standby events"
+        ]
+      },
+      {
+        "title": "STP (SPANNING TREE PROTOCOL)",
+        "commands": [
+          "spanning-tree mode pvst",
+          "spanning-tree mode rapid-pvst",
+          "spanning-tree vlan <vlan-id> priority <value>",
+          "spanning-tree portfast",
+          "spanning-tree bpduguard enable",
+          "show spanning-tree",
+          "show spanning-tree vlan <vlan-id>",
+          "show spanning-tree root",
+          "show spanning-tree interface <interface-id>"
+        ]
+      },
+      {
+        "title": "DUPLEX & SPEED",
+        "commands": [
+          "interface <interface-id>",
+          "speed auto",
+          "speed <value>",
+          "duplex auto",
+          "duplex full",
+          "duplex half",
+          "show interfaces <interface-id>",
+          "show interfaces status"
+        ]
+      },
+      {
+        "title": "SUBNET / IP VERIFICATION",
+        "commands": [
+          "show ip interface brief",
+          "show ip route",
+          "show arp",
+          "show mac address-table",
+          "ping <ip-address>",
+          "traceroute <ip-address>"
+        ]
+      },
+      {
+        "title": "STATIC ROUTING (L3 SWITCH / ROUTER)",
+        "commands": [
+          "ip routing",
+          "ip route <destination-network> <mask> <next-hop>",
+          "ip route 0.0.0.0 0.0.0.0 <next-hop>",
+          "no ip route <destination-network> <mask> <next-hop>",
+          "show ip route",
+          "show ip route static",
+          "show ip protocols"
+        ]
+      },
+      {
+        "title": "PORT-CHANNEL (ETHERCHANNEL)",
+        "commands": [
+          "interface <interface-id>",
+          "channel-group <group-id> mode active",
+          "channel-group <group-id> mode desirable",
+          "channel-group <group-id> mode on",
+          "interface port-channel <group-id>",
+          "switchport mode trunk",
+          "show etherchannel summary",
+          "show etherchannel <group-id> detail"
+        ]
+      },
+      {
+        "title": "PORT SECURITY",
+        "commands": [
+          "interface <interface-id>",
+          "switchport port-security",
+          "switchport port-security maximum <number>",
+          "switchport port-security mac-address sticky",
+          "switchport port-security mac-address <mac-address>",
+          "switchport port-security violation protect",
+          "switchport port-security violation restrict",
+          "switchport port-security violation shutdown",
+          "show port-security",
+          "show port-security interface <interface-id>",
+          "clear port-security sticky interface <interface-id>"
+        ]
+      },
+      {
+        "title": "SVI / L3 VLAN CONFIGURATION",
+        "commands": [
+          "ip routing",
+          "interface vlan <vlan-id>",
+          "ip address <ip-address> <mask>",
+          "no shutdown",
+          "show ip interface brief",
+          "show vlan brief"
+        ]
+      },
+      {
+        "title": "INTERFACE TROUBLESHOOTING",
+        "commands": [
+          "show interfaces",
+          "show interfaces counters errors",
+          "show interface <interface-id> status",
+          "shutdown",
+          "no shutdown",
+          "clear counters interface <interface-id>"
+        ]
+      },
+      {
+        "title": "SWITCH SOFTWARE UPGRADE",
+        "commands": [
+          "copy tftp: flash:",
+          "dir flash:",
+          "verify /md5 flash:<image-name>",
+          "boot system flash:<image-name>",
+          "write memory",
+          "reload"
+        ]
+      },
+      {
+        "title": "LOGGING & ERROR HANDLING",
+        "commands": [
+          "show logging",
+          "logging buffered <size>",
+          "logging console",
+          "logging monitor",
+          "clear logging"
+        ]
+      },
+      {
+        "title": "COMMON INCIDENT VALIDATION COMMANDS",
+        "commands": [
+          "show running-config interface <interface-id>",
+          "show ip interface <interface-id>",
+          "show spanning-tree interface <interface-id>",
+          "show mac address-table interface <interface-id>",
+          "show arp",
+          "show clock"
+        ]
+      }
+    ]
+  },
+  "aaa": {
+    "title": "AAA — Cisco ASA / F5 LTM Command Reference",
+    "sections": [
+      {
+        "title": "OBJECTS AND OBJECT-GROUP COMMANDS",
+        "commands": [
+          "object network <OBJECT_NAME>",
+          "  host <IP | FQDN>",
+          "  subnet <NETWORK> <MASK>",
+          "  range <START_IP> <END_IP>",
+          "object-group network <GROUP_NAME>",
+          "  network-object <IP>",
+          "  network-object host <IP>",
+          "  network-object object <OBJECT_NAME>",
+          "  group-object <OBJECT_GROUP>",
+          "object service <SERVICE_NAME>",
+          "  service <PROTO> destination eq <PORT>",
+          "object-group service <GROUP_NAME>",
+          "  service-object tcp destination eq <PORT>",
+          "  service-object icmp echo",
+          "  group-object <SERVICE_GROUP>"
+        ]
+      },
+      {
+        "title": "SHUN COMMANDS",
+        "commands": [
+          "shun <IP_ADDRESS>",
+          "no shun <IP_ADDRESS>",
+          "show shun"
+        ]
+      },
+      {
+        "title": "NAT COMMANDS",
+        "commands": [
+          "nat (inside,outside) source static <LOCAL_OBJ> <GLOBAL_OBJ> destination static <REMOTE_OBJ> <REMOTE_OBJ> no-proxy-arp route-lookup",
+          "object network <OBJ>",
+          "  nat (inside,outside) static <PUBLIC_IP>",
+          "show run nat",
+          "show nat detail",
+          "show xlate",
+          "clear xlate"
+        ]
+      },
+      {
+        "title": "SITE-TO-SITE VPN COMMANDS",
+        "commands": [
+          "crypto ikev1 enable outside",
+          "crypto ikev1 policy 10",
+          "  authentication pre-share",
+          "  encryption aes-256",
+          "  hash sha",
+          "  group 2",
+          "  lifetime 86400",
+          "crypto ipsec ikev1 transform-set TS esp-aes esp-sha-hmac",
+          "access-list VPN-ACL extended permit ip <LOCAL_NET> <MASK> <REMOTE_NET> <MASK>",
+          "crypto map VPNMAP 10 match address VPN-ACL",
+          "crypto map VPNMAP 10 set peer <PEER_IP>",
+          "crypto map VPNMAP 10 set ikev1 transform-set TS",
+          "crypto map VPNMAP interface outside",
+          "tunnel-group <PEER_IP> type ipsec-l2l",
+          "tunnel-group <PEER_IP> ipsec-attributes",
+          "  ikev1 pre-shared-key <PSK>",
+          "vpn-sessiondb logoff ipaddress <PEER_IP>",
+          "show crypto isakmp sa",
+          "show crypto ipsec sa"
+        ]
+      },
+      {
+        "title": "VPN FILTERS",
+        "commands": [
+          "access-list VPN-FILTER extended permit tcp host <REMOTE_IP> host <LOCAL_IP> eq <PORT>",
+          "tunnel-group <TG_NAME> general-attributes",
+          "  default-group-policy <GROUP_POLICY>",
+          "group-policy <GROUP_POLICY> attributes",
+          "  vpn-filter value VPN-FILTER",
+          "username <USER> attributes",
+          "  vpn-filter value VPN-FILTER"
+        ]
+      },
+      {
+        "title": "ACL COMMANDS",
+        "commands": [
+          "access-list <ACL_NAME> extended permit|deny <PROTO> <SRC> <MASK> <DST> <MASK> eq <PORT>",
+          "access-group <ACL_NAME> in|out interface <INTERFACE>",
+          "show access-list",
+          "show access-list <ACL_NAME>",
+          "show run access-group"
+        ]
+      },
+      {
+        "title": "PACKET TRACER",
+        "commands": [
+          "packet-tracer input <INTERFACE> tcp|udp|icmp <SRC_IP> <SRC_PORT> <DST_IP> <DST_PORT>",
+          "packet-tracer input <INTERFACE> tcp <SRC_IP> <SRC_PORT> <DST_IP> <DST_PORT> detailed"
+        ]
+      },
+      {
+        "title": "ASA CODE UPGRADE",
+        "commands": [
+          "copy http://<PATH>/<IMAGE> disk0:",
+          "show disk0:",
+          "boot system disk0:/<IMAGE>",
+          "no boot system disk0:/<OLD_IMAGE>",
+          "show bootvar",
+          "show version | in Configuration register",
+          "wr mem",
+          "reload noconfirm"
+        ]
+      },
+      {
+        "title": "ASA SHOW COMMANDS",
+        "commands": [
+          "show running-config",
+          "show arp",
+          "show ip",
+          "show route",
+          "show crypto isakmp sa",
+          "show crypto ipsec sa",
+          "show version",
+          "show run object-group",
+          "show run nat",
+          "show run access-group",
+          "show conn",
+          "show nameif",
+          "show interface ip brief"
+        ]
+      },
+      {
+        "title": "F5 LTM COMMANDS",
+        "commands": [
+          "show ltm virtual <VIP>",
+          "show ltm pool <POOL>",
+          "show ltm node <NODE>",
+          "list ltm virtual <VIP>",
+          "list ltm pool <POOL>",
+          "create ltm node <NAME> { address <IP> }",
+          "modify ltm node <NAME> session user-disabled",
+          "modify ltm node <NAME> session user-enabled",
+          "create ltm pool <POOL> { load-balancing-mode least-connections-member members add { <IP>:<PORT> } } monitor tcp",
+          "modify ltm pool <POOL> members add { <IP>:<PORT> }",
+          "modify ltm pool <POOL> members delete { <IP>:<PORT> }",
+          "modify ltm pool <POOL> members modify { <IP>:<PORT> { session user-disabled }}",
+          "modify ltm pool <POOL> members modify { <IP>:<PORT> { session user-enabled }}",
+          "create ltm virtual <VIP> destination <IP:PORT> pool <POOL>",
+          "install sys crypto cert <CERT>.crt from-editor no-overwrite",
+          "install sys crypto key <KEY>.key from-editor no-overwrite",
+          "modify ltm profile client-ssl <PROFILE> replace-all-with { <CERT> { cert <CERT>.crt key <KEY>.key chain <CHAIN> } }",
+          "save sys config",
+          "show sys version"
+        ]
+      }
+    ]
+  }
+}
